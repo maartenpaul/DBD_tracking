@@ -1,0 +1,19 @@
+
+S3method(MSD, default)
+S3method(MSD, data.frame)
+S3method(MSD, list)
+
+S3method(MSD_fit, default)
+S3method(MSD_fit, data.frame)
+S3method(MSD_fit, list)
+
+
+
+import(plyr
+       )
+
+
+export(MSD,MSD_fit
+       )
+
+
