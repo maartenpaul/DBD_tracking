@@ -1,9 +1,10 @@
 Package: MSDtracking
 Type: Package
 Title: MSD analysis of single molecule tracking data
-Version: 0.1
-Date: 2016-04-22
+Version: 0.1.1
+Date: 2016-05-02
 Author: Maarten Paul <m.w.paul@erasmusmc.nl>
+Imports: pracma,plyr,minpack.lm
 Maintainer: Who to complain to <yourfault@somewhere.net>
 Description: More about what it does (maybe more than one line)
 License: What license is it under?
