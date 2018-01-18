@@ -1,4 +1,4 @@
-track_msd <- function(x,n=5,framerate=30,pxsize=100){
+track_msd <- function(x,n=5,framerate=0.1,pxsize=100){
   x$X <- (x$X*pxsize)/1000
   x$Y <- (x$Y*pxsize)/1000
 
@@ -29,24 +29,24 @@ track_msd <- function(x,n=5,framerate=30,pxsize=100){
 }
 
 
-TRACK_MSD <- function(x,n=5,framerate=30,pxsize=100){
+TRACK_MSD <- function(x,n=5,framerate=0.1,pxsize=100){
   UseMethod("TRACK_MSD")
 }
 
-TRACK_MSD.default <- function(x,n=5,framerate=30,pxsize=100){
+TRACK_MSD.default <- function(x,n=5,framerate=0.1,pxsize=100){
   stop("MSD requires data frame")
 }
 
-TRACK_MSD.data.frame <-  function(x,n=5,framerate=30,pxsize=100){
+TRACK_MSD.data.frame <-  function(x,n=5,framerate=0.1,pxsize=100){
   track_msd(x,n,framerate,pxsize)
 
 }
 
-TRACK_MSD.list <-  function(x,n=5,framerate=30,pxsize=100){
+TRACK_MSD.list <-  function(x,n=5,framerate=0.1,pxsize=100){
 
   llply(x,function(x){
     out <- TRACK_MSD(x,n,framerate,pxsize)
-    out$cellID <- x$cellID
+    out$cellID <- x$cellID[1]
     return(out)
   })
 

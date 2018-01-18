@@ -3,7 +3,7 @@
 track_msd_fit <- function(x,n=5,fitzero=T,framerate=1/33,pxsize=100,offset=4*0.01^2){
 
   #apply function for every track (column V4)
-  coef <- ddply(x,.variables = "track", function(x) {
+  coef <- ddply(x[,-6],.variables = "track", function(x) {
     mst <- t(x[,-1])
     time <- seq(1,length(mst),1)
     time <- time/framerate/1000 #covert frame to second
@@ -54,7 +54,9 @@ TRACK_MSD_fit.data.frame <-  function(x,n=5,fitzero=T,framerate=1/33,pxsize=100,
 
 TRACK_MSD_fit.list <-  function(x,n=5,fitzero=T,framerate=1/33,pxsize=100,offset=4*0.01^2){
   llply(x,.progress = "text",function(x){
-    TRACK_MSD_fit(x,n,fitzero,framerate,pxsize,offset)
+    out <- TRACK_MSD_fit(x,n,fitzero,framerate,pxsize,offset)
+    out$cellID <- x$cellID[1]
+    return(out)
   })
 }
 
