@@ -19,10 +19,9 @@ S3method(SEGMENT_STAT, list)
 
 
 import(plyr,
-       minpack.lm
+       minpack.lm,stats,ggplot2
        )
 
-
-export(TRACK_MSD,TRACK_MSD_fit,TRACK_STAT,SEGMENT_STAT)
+export(TRACK_MSD,TRACK_MSD_fit,TRACK_STAT,SEGMENT_STAT,msd_analyze_data,msd_histogram,sos_to_spoton_csv)
 
 

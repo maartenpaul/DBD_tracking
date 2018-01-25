@@ -1,12 +1,12 @@
 Package: MSDtracking
 Type: Package
-Title: MSD analysis of single molecule tracking data
-Version: 0.1.1
-Date: 2016-05-02
+Title: MSD analysis of single particle-tracking data
+Version: 0.2
+Date: 2017-01-18
 Author: Maarten Paul <m.w.paul@erasmusmc.nl>
 Imports: pracma,plyr,minpack.lm
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
+Maintainer: Maarten Paul
+Description: Mean-square displacement analysis of particle-tracking data
 License: What license is it under?
 LazyData: TRUE
 License: GPL2
