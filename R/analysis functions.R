@@ -134,6 +134,7 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
 
   results2 <- ldply(results)
   names(results2) <- c(".id","immobile","mobile")
+  write.table(results2,file=file.path(directory,paste0(name,"_imm_fractions.txt")),,row.names = F,col.names = T)
 
   if(!is.null(order)){
     results2$.id <- factor(results2$.id,levels(histdata$.id)[order])
@@ -165,4 +166,32 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
 
   print(q3)
   #qa <- grid.arrange(q1,q2,ncol=2)
+}
+
+sos_to_spoton_csv <- function(condition_list,directory,framerate,pixelsize){
+  condition_list <- list.dirs(directory,full.names = F,recursive = F)
+  #condition_list <- condition_list[c(4)]
+  #condition_list <- "SNAP-SiR"
+  segments_all <- list()
+  msd_fit_all <- list()
+  track_stats_all <- list()
+  #load data
+  for (i in 1:length(condition_list)){
+    segments <- list()
+    dir <- file.path(directory,condition_list[i])
+    filelist <- list.dirs(dir,full.names = T,recursive = F)
+    #filelist <- filelist[-grep("skip",x = filelist)]
+    total <- length(filelist)
+    # create progress bar
+    for(j in 1:total){
+      #  Sys.sleep(0.1)
+      tracks_simple <- read.csv(file.path(filelist[j],"tracks.simple.filtered.txt"),sep = "\t",header = F)
+      spoton <- tracks_simple[c(1,1,4,2,3)]
+      spoton[,2] <- spoton[,2]/framerate/1000 #seconds
+      spoton[,4:5] <- spoton[,4:5]*pixelsize/1000 #um
+      spoton <- cbind(seq(0,nrow(spoton)-1),spoton)
+      names(spoton) <- c("","frame","t","trajectory","x","y")
+      write.csv(spoton,file = file.path(dirname(filelist[j]),paste(basename(dirname(filelist[j])),j,"tracks.spoton.txt",sep = "_")),row.names=FALSE,quote = FALSE)
+    }
+  }
 }

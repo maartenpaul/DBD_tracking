@@ -17,7 +17,7 @@ offset <- 0.003158194#experimentally determined
 max_tracks <- 30 #maximum number of tracks per frame else exclude tracks from dataset, avoids mislinking of tracks
 
 condition_list <- list.dirs(directory,full.names = F,recursive = F)
-condition_list <- condition_list[c(5)]
+#condition_list <- condition_list[c(5)]
 
 directory <- "D:/Stack/Genetics/180117 BRCA2 dDdC IR tracking/"
 
