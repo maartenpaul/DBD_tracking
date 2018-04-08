@@ -1,87 +1,99 @@
-merge_dataset <- function(dirs,conds,con_name){
-  if(length(dirs)!=length(conds)){
-    stop("dirs not equal to conds")
-  }
-  for(i in 1:length(dirs)){
-    load(file.path(dirs[i],"msd_fit_all.Rdata"))
-    date <- basename(dirs[i])
-    date <- strsplit(date," ")
-    date <- date[[1]][1]
-    msd_fit_all[[conds[i]]]$cellID <- paste0(date,"_",msd_fit_all[[conds[i]]]$cellID)
-    msd_fit_all[[conds[i]]]$experiment <- date
-    if (i==1) {
-      all <- msd_fit_all[[conds[i]]]
-    } else {
-      all <- rbind(all,msd_fit_all[[conds[i]]])
-    }
-  }
-  all$condition <- con_name
-  return(all)
-}
+library(MSDtracking)
 
 # BRCA2 HU ----------------------------------------------------------------
 all_data <- list()
 datasets <- c("D:/Stack/Genetics/180110 BRCA2 WTG10_dDdC_F4",
-              "Y:/Maarten/Genetics/170711 BRCA2 dDBD CTD Halo HU",
-              "Y:/Maarten/Genetics/170523 BRCA2 tracking HU")
+              "F://170711 BRCA2 dDBD CTD Halo HU",
+              "F://170523 BRCA2 tracking HU")
 
-all_data[["WT -HU"]] <- merge_dataset(datasets,c("WT G10 noHU","WT E10 noHU","WT E10 noHU"),con_name="WT -HU")
+all_data[["WT -HU"]] <- merge_dataset(datasets[c(2,3)],c("WT G10 noHU","WT E10 noHU","WT E10 noHU")[c(2,3)],con_name="WT -HU")
 
-all_data[["WT +HU"]] <- merge_dataset(datasets,c("WT G10 +HU 2h","WT E10 HU","WT E10 HU"),con_name="WT +HU")
+all_data[["WT +HU"]] <- merge_dataset(datasets[c(2,3)],c("WT G10 +HU 2h","WT E10 HU","WT E10 HU")[c(2,3)],con_name="WT +HU")
 
-all_data[["dDBDdCTD -HU"]] <- merge_dataset(datasets,c("dDBDdCTD F4 noHU","dDBDdCTD G9 noHU","dDBD G9 noHU"),con_name="dDBDdCTD -HU")
+all_data[["dDBDdCTD -HU"]] <- merge_dataset(datasets[c(2,3)],c("dDBDdCTD F4 noHU","dDBDdCTD G9 noHU","dDBD G9 noHU")[c(2,3)],con_name="dDBDdCTD -HU")
 
-all_data[["dDBDdCTD +HU"]] <- merge_dataset(datasets,c("dDBDdCTD F4 +HU 2h","dDBDdCTD G9 HU","dDBD G9 HU"),con_name="dDBDdCTD +HU")
+all_data[["dDBDdCTD +HU"]] <- merge_dataset(datasets[c(2,3)],c("dDBDdCTD F4 +HU 2h","dDBDdCTD G9 HU","dDBD G9 HU")[c(2,3)],con_name="dDBDdCTD +HU")
 
 all_data[["dDBD -HU"]] <- merge_dataset(datasets[2],c("dDBD+CTD A4 noHU"),con_name="dDBD -HU")
 
 all_data[["dDBD +HU"]] <- merge_dataset(datasets[2],c("dDBD+CTD A4 HU"),con_name="dDBD +HU")
 
-
+save(all_data,file = file.path("D:/Stack/Genetics/Tracking data merged/","BRCA2_HU_all_data.Rdata"))
 msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_HU",threshold=0.05)
-
+msd_histogram(all_data[c(1,2)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_HU_WT",threshold=0.05)
+msd_histogram(all_data[c(3,4)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_HU_dDBDdCTD",threshold=0.05)
+msd_histogram(all_data[c(5,6)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_HU_dDBD",threshold=0.05)
+msd_histogram(all_data[c(1,2,3,4)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_HU+dDBDdCTD_WT",threshold=0.05)
 
 # BRCA2 MMC ---------------------------------------------------------------
 all_data <- list()
-datasets <- c("Y:/Maarten/Genetics/170517 BRCA2 tracking MMC",
-              "Y:/Maarten/Genetics/170623 BRCA2 MMC tracking",
+datasets <- c("F://170517 BRCA2 tracking MMC",
+              "F://170623 BRCA2 MMC tracking",
               "D:/Stack/Genetics/170809 tracking MMC WT_dDBD_+CTD")
-all_data[["WTnoMMC"]] <- merge_dataset(datasets,c("WT E10 5nM noMMC","WT E10 noMMC2h","WT E10 noMMC"),con_name="WT -MMC")
+all_data[["WT -MMC"]] <- merge_dataset(datasets[c(1,3)],c("WT E10 5nM noMMC","WT E10 noMMC2h","WT E10 noMMC")[c(1,3)],con_name="WT -MMC")
 
-all_data[["WTMMC"]] <- merge_dataset(datasets,c("WT E10 5nM 1ug MMC","WT E10 MMC","WT E10 MMC"),con_name="WT +MMC")
+all_data[["WT +MMC"]] <- merge_dataset(datasets[c(1,3)],c("WT E10 5nM 1ug MMC","WT E10 MMC","WT E10 MMC")[c(1,3)],con_name="WT +MMC")
 
-all_data[["dDBDdCTDnoMMC"]] <- merge_dataset(datasets,c("dDBDdCTD G9 5nM noMMC","dDBDcCTD G9 noMMC","dDBDdCTD G9 noMMC"),con_name="dDBDdCTD -MMC")
+all_data[["dDBDdCTD -MMC"]] <- merge_dataset(datasets[c(1,3)],c("dDBDdCTD G9 5nM noMMC","dDBDcCTD G9 noMMC","dDBDdCTD G9 noMMC")[c(1,3)],con_name="dDBDdCTD -MMC")
 
-all_data[["dDBDdCTDMMC"]] <- merge_dataset(datasets,c("dDBDdCTD G9 5nM 1ug MMC","dDBDdCTD G9 MMC","dDBDdCTD G9 MMC"),con_name="dDBDdCTD +MMC")
+all_data[["dDBDdCTD +MMC"]] <- merge_dataset(datasets[c(1,3)],c("dDBDdCTD G9 5nM 1ug MMC","dDBDdCTD G9 MMC","dDBDdCTD G9 MMC")[c(1,3)],con_name="dDBDdCTD +MMC")
 
-all_data[["dDBDnoMMC"]] <- merge_dataset("D:/Stack/Genetics/170809 tracking MMC WT_dDBD_+CTD",c("dDBD A4 noMMC"),con_name="dDBD -MMC")
+all_data[["dDBD -MMC"]] <- merge_dataset("D:/Stack/Genetics/170809 tracking MMC WT_dDBD_+CTD",c("dDBD A4 noMMC"),con_name="dDBD -MMC")
 
-all_data[["dDBDMMC"]] <- merge_dataset("D:/Stack/Genetics/170809 tracking MMC WT_dDBD_+CTD",c("dDBD A4 MMC"),con_name="dDBD +MMC")
+all_data[["dDBD +MMC"]] <- merge_dataset("D:/Stack/Genetics/170809 tracking MMC WT_dDBD_+CTD",c("dDBD A4 MMC"),con_name="dDBD +MMC")
 
-msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="HU",threshold=0.05)
-
+save(all_data,file = file.path("D:/Stack/Genetics/Tracking data merged/","BRCA2_MMC_all_data.Rdata"))
+msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="MMC",threshold=0.05)
+msd_histogram(all_data[c(1,2)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_MMC_WT",threshold=0.05)
+msd_histogram(all_data[c(3,4)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_MMC_dDBDdCTD",threshold=0.05)
+msd_histogram(all_data[c(1,2,3,4)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_MMC_WT+dDBDdCTD",threshold=0.05)
+msd_histogram(all_data[c(5,6)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_MMC_dDBD",threshold=0.05)
 
 # BRCA2 IR ----------------------------------------------------------------
+
 all_data <- list()
-datasets <- c("Y:/Maarten/Genetics/170517 BRCA2 tracking MMC","Y:/Maarten/Genetics/170623 BRCA2 MMC tracking","D:/Stack/Genetics/170809 tracking MMC WT_dDBD_+CTD")
-all_data[["WTnoMMC"]] <- merge_dataset(datasets,c("WT E10 5nM noMMC","WT E10 noMMC2h","WT E10 noMMC"),con_name="WT -MMC")
+datasets <- c("D:/Stack/Genetics/170510 particle tracking BRCA2/","F://180117 BRCA2 dDdC IR tracking")
+all_data[["WT -IR"]] <- merge_dataset(datasets,c("BRCA2 WT Halo E10 noIR","WT G10 -IR"),con_name="WT -IR")
 
-all_data[["WTMMC"]] <- merge_dataset(datasets,c("WT E10 5nM 1ug MMC","WT E10 MMC","WT E10 MMC"),con_name="WT +MMC")
+all_data[["WT +IR"]] <- merge_dataset(datasets,c("BRCA2 WT Halo E10 5gyIR 2h","WT G10 +IR"),con_name="WT +IR")
 
-all_data[["dDBDdCTDnoMMC"]] <- merge_dataset(datasets,c("dDBDdCTD G9 5nM noMMC","dDBDcCTD G9 noMMC","dDBDdCTD G9 noMMC"),con_name="dDBDdCTD -MMC")
+all_data[["dDBDdCTD -IR"]] <- merge_dataset(datasets,c("BRCA2 dDBDdCTD Halo G9 noIR","dDBDdCTD F4 -IR"),con_name="dDBDdCTD -IR")
 
-all_data[["dDBDdCTDMMC"]] <- merge_dataset(datasets,c("dDBDdCTD G9 5nM 1ug MMC","dDBDdCTD G9 MMC","dDBDdCTD G9 MMC"),con_name="dDBDdCTD +MMC")
+all_data[["dDBDdCTD +IR"]] <- merge_dataset(datasets,c("BRCA2 dDBDdCTD Halo G9 5gyIR 2h","dDBDdCTD F4 +IR"),con_name="dDBDdCTD +IR")
+
+save(all_data,file = file.path("D:/Stack/Genetics/Tracking data merged/","BRCA2_IR_all_data.Rdata"))
+msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_IR",threshold=0.05)
+msd_histogram(all_data[c(1,2)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_WT_IR",threshold=0.05)
+msd_histogram(all_data[c(3,4)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_dDBDdCTD_IR",threshold=0.05)
 
 
 # ##PALB2 HU --------------------------------------------------------------
 all_data <- list()
-datasets <- c("Y:/Maarten/Genetics/170517 BRCA2 tracking MMC","Y:/Maarten/Genetics/170623 BRCA2 MMC tracking","D:/Stack/Genetics/170809 tracking MMC WT_dDBD_+CTD")
+stop("TO DO")
+datasets <- c("F://170517 BRCA2 tracking MMC","F://170623 BRCA2 MMC tracking","D:/Stack/Genetics/170809 tracking MMC WT_dDBD_+CTD")
 all_data[["WTnoMMC"]] <- merge_dataset(datasets,c("WT E10 5nM noMMC","WT E10 noMMC2h","WT E10 noMMC"),con_name="WT -MMC")
 
 all_data[["WTMMC"]] <- merge_dataset(datasets,c("WT E10 5nM 1ug MMC","WT E10 MMC","WT E10 MMC"),con_name="WT +MMC")
 
 
 # PALB2 MMC ---------------------------------------------------------------
+all_data <- list()
+datasets <- c("D:/Stack/Genetics/171024 PALB2-Halo tracking")
+all_data[["PALB2 -MMC"]] <- merge_dataset(datasets,c("PALB2 F6 mock"),con_name="PALB2 -MMC")
+
+all_data[["PALB2 +MMC"]] <- merge_dataset(datasets,c("PALB2 F6 MMC 2h"),con_name="PALB2 +MMC")
+
+msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="PALB2 MMC",threshold=0.05)
+
+
+# Halo-BRCA2 WT d1-40 -----------------------------------------------------
+all_data <- list()
+datasets <- c("D:/Stack/Genetics/171130 d1-40 Halo-BRCA2","D:/Stack/Genetics/171130 N-BRCA2 Halo H8 HU")
+all_data[["Halo-BRCA2"]] <- merge_dataset(datasets[2],c("-HU"),con_name="Halo-BRCA2")
+
+all_data[["Halo-BRCA2 d1-40"]] <- merge_dataset(datasets[1],c("F9"),con_name="Halo-BRCA2 d1-40")
+
+msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="HaloTag BRCA2 d1-40",threshold=0.05)
 
 
 
@@ -114,3 +126,17 @@ all_data[["WTMMC"]] <- merge_dataset(datasets,c("WT E10 5nM 1ug MMC","WT E10 MMC
 # all$`-MMC`$condition <- "-MMC"
 # all$`+MMC`$condition <- "+MMC"
 # msd_fit_all <-all
+
+
+
+# H2B/NLS ---------------------------------------------------------------------
+all_data <- list()
+#all_data[["H2B"]] <- merge_dataset(datasets[1],c("H2B"),con_name="H2B")
+load("Y:/Maarten/Genetics/170809 tracking MMC WT_dDBD_+CTD/H2B/msd_fit.Rdata")
+all_data[["H2B"]] <- ldply(tracks)
+all_data[["H2B"]]$condition <- "H2B"
+
+load("Y:/Maarten/Genetics/170512 BRCA2 slow tracking/Halo-NLS/30 ms/msd_fit.Rdata")
+all_data[["NLS"]] <- ldply(tracks)
+all_data[["NLS"]]$condition <- "NLS"
+msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="H2B-NLS",threshold=0.05)
