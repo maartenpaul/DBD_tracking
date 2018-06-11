@@ -4,8 +4,8 @@ Title: MSD analysis of single particle-tracking data
 Version: 0.2
 Date: 2017-01-18
 Author: Maarten Paul <m.w.paul@erasmusmc.nl>
-Imports: pracma,plyr,minpack.lm
-Maintainer: Maarten Paul
+Imports: pracma,plyr,minpack.lm,ggplot2,reshape2
+Maintainer: Maarten Paul <m.w.paul@erasmusmc.nl>
 Description: Mean-square displacement analysis of particle-tracking data
 License: What license is it under?
 LazyData: TRUE

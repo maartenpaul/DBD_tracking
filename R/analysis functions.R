@@ -128,7 +128,7 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
   q1 <- ggplot(histdata, aes(x=x, y=mean,colour=.id,fill=.id)) +
     geom_smooth(stat="identity")+
     # geom_smooth(stat="smooth",span = 0.2)+
-    geom_ribbon(aes(ymin=mean-se, ymax=mean+se,colour=NULL), alpha=0.4)+ylim(0,ymax)+
+    geom_ribbon(aes(ymin=mean-abs(se), ymax=mean+abs(se),colour=NULL), alpha=0.4)+ylim(-0.005,ymax)+
     theme(text = element_text(size=20),legend.position = "none")+
     facet_wrap(~.id,nrow=2,dir="v") +scale_x_continuous(trans="log10")+
     scale_colour_Publication()+scale_fill_Publication()+theme_Publication(base_size=16)+
@@ -138,7 +138,7 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
     q1 <- ggplot(histdata, aes(x=x, y=mean,colour=.id,fill=.id)) +
       geom_smooth(stat="identity")+
       # geom_smooth(stat="smooth",span = 0.2)+
-      geom_ribbon(aes(ymin=mean-se, ymax=mean+se,colour=NULL), alpha=0.4)+ylim(0,ymax)+
+      geom_ribbon(aes(ymin=mean-se, ymax=mean+se,colour=NULL), alpha=0.4)+ylim(-0.005,ymax)+
       theme(text = element_text(size=20),legend.position = "none")+
       facet_wrap(~.id,nrow=1,dir="h") +scale_x_continuous(trans="log10")+
       scale_colour_Publication()+scale_fill_Publication()+theme_Publication(base_size=16)+

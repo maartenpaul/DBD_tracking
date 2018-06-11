@@ -18,10 +18,8 @@ S3method(SEGMENT_STAT, list)
 
 
 
-import(plyr,
-       minpack.lm,stats,ggplot2
-       )
+import(plyr,minpack.lm,stats,ggplot2,reshape2,grid,ggthemes,scales)
 
-export(TRACK_MSD,TRACK_MSD_fit,TRACK_STAT,SEGMENT_STAT,msd_analyze_data,msd_histogram)
+export(TRACK_MSD,TRACK_MSD_fit,TRACK_STAT,SEGMENT_STAT,msd_analyze_data,msd_histogram,merge_dataset)
 
 
