@@ -16,11 +16,14 @@ fitMSD <- T
 offset <- 0.003158194#experimentally determined
 max_tracks <- 30 #maximum number of tracks per frame else exclude tracks from dataset, avoids mislinking of tracks
 
+directory <- "D:/Stack/Genetics/180613 BRCA2 dCTD HU mirin/"
+
 condition_list <- list.dirs(directory,full.names = F,recursive = F)
 #condition_list <- condition_list[c(5)]
 
-directory <- "D:/Stack/Genetics/180117 BRCA2 dDdC IR tracking/"
 
 msd_analyze_data(directory,condition_list,framerate,n,fitzero,min_length,pixelsize,fitMSD,offset,max_tracks)
+
+load(file.path(directory,"msd_fit_all.Rdata"))
 
 msd_histogram(msd_fit_all,directory)
