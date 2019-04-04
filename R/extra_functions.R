@@ -105,9 +105,13 @@ segment_stat <- function(x){
       C <- as.numeric(x[i+2,2:3])
       AB <- B-A
       CB <- C-B
-      dAB <- sqrt((B[1]-A[1])^2+(B[2]-A[2])^2)
-      dBC <- sqrt((C[1]-B[1])^2+(C[2]-B[2])^2)
-      seg_angle <- c(seg_angle,(acos((AB%*%CB)/(dAB*dBC))*180/pi))
+
+      #dAB <- sqrt((B[1]-A[1])^2+(B[2]-A[2])^2)
+      #dBC <- sqrt((C[1]-B[1])^2+(C[2]-B[2])^2)
+      #Formula obtained from https://gitlab.com/anders.sejr.hansen/anisotropy
+      angle <- abs(atan2(det(cbind(AB,CB)),AB%*%CB))
+      angle <- angle/pi*180
+      seg_angle <- c(seg_angle,angle)
 
 
     }
@@ -119,8 +123,10 @@ segment_stat <- function(x){
   if(nrow(x)>4){x$angle <- get_angle(x)}else{
     x$angle<- 0
   }
-  x$disp_squared <- x$displacement^2
-  x$disp_squared[x$displacement==-1] <- -1
+  if(!is.null(x$displacement)){
+    x$disp_squared <- x$displacement^2
+    x$disp_squared[x$displacement==-1] <- -1
+  }
   return(x)
   }
   )

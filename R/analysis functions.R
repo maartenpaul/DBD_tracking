@@ -1,4 +1,4 @@
-msd_analyze_data <- function(directory,condition_list,framerate,n,fitzero,min_length,pixelsize,fitMSD,offset,max_tracks){
+msd_analyze_data <- function(directory,condition_list,framerate,n,fitzero,min_length,pixelsize,fitMSD,offset,max_tracks,track_file_name="tracks.simple.filtered.txt",extension=""){
   segments_all <- list()
   msd_fit_all <- list()
   track_stats_all <- list()
@@ -11,15 +11,15 @@ msd_analyze_data <- function(directory,condition_list,framerate,n,fitzero,min_le
     # create progress bar
     for(j in 1:total){
       Sys.sleep(0.1)
-      tracks_simple <- read.csv(file.path(filelist[j],"tracks.simple.filtered.txt"),sep = "\t",header = F)
+      tracks_simple <- read.csv(file.path(filelist[j],track_file_name),sep = "\t",header = F)
       names(tracks_simple) <- c("frame","X","Y","track","displacement","intensity","sigma","fit_error")
-      segments[[j]] <- data.frame(SEGMENT_STAT(tracks_simple),"cellID"=basename(dirname(file.path(filelist[j],"tracks.simple.filtered.txt"))))
+      segments[[j]] <- data.frame(SEGMENT_STAT(tracks_simple),"cellID"=basename(dirname(file.path(filelist[j],track_file_name))))
     }
-    track_msd <- TRACK_MSD(segments,n = n,framerate=framerate)
+    track_msd <- TRACK_MSD(segments,n = n,framerate=framerate,truncate = FALSE,pxsize = pixelsize)
     save(track_msd,file=file.path(dir,"track_msd.Rdata"))
 
     if(fitMSD){
-      tracks <-  TRACK_MSD_fit(track_msd,n = n,fitzero = fitzero,framerate=framerate,offset)
+      tracks <-  TRACK_MSD_fit(track_msd,n = n,fitzero = fitzero,framerate=framerate,offset=offset,pxsize = pixelsize)
       save(tracks,file=file.path(dir,"msd_fit.Rdata"))
 
       stats <- TRACK_STAT(x=segments)
@@ -33,16 +33,172 @@ msd_analyze_data <- function(directory,condition_list,framerate,n,fitzero,min_le
 
   }
   #save data to the folder
-  save(segments_all,file=file.path(directory,"segments_all.Rdata"))
-  save(msd_fit_all,file=file.path(directory,"msd_fit_all.Rdata"))
-  save(track_stats_all,file=file.path(directory,"track_stats_all.Rdata"))
+  save(segments_all,file=file.path(directory,paste("segments_all_",extension,".Rdata")))
+  save(msd_fit_all,file=file.path(directory,paste("msd_fit_all_",extension,".Rdata")))
+  save(track_stats_all,file=file.path(directory,paste("track_stats_all_",extension,".Rdata")))
+}
+
+msd_analyze_data_mosaic <- function(directory,condition_list,framerate,n,fitzero,min_length,pixelsize,fitMSD,offset,max_tracks,track_file_name="tracks.simple.filtered.txt",extension="",dim){
+  segments_all <- list()
+  msd_fit_all <- list()
+  track_stats_all <- list()
+
+  for (i in 1:length(condition_list)){
+    segments <- list()
+    dir <- file.path(directory,condition_list[i])
+    filelist <- list.files(dir,full.names = T,recursive = F,pattern = "^Traj_.*.\\.csv$")
+    total <- length(filelist)
+    # create progress bar
+    for(j in 1:total){
+      Sys.sleep(0.1)
+      tracks_simple <- read.csv(filelist[i],sep = ",",header = T)
+      names(tracks_simple) <- c("id","track","frame","X","Y","Z","m0","m1","m2","m3","m4","NPscore")
+
+      tracks_simple <- tracks_simple[,c(3,4,5,2,6,7,8,9,10,11,12)]
+      tracks_simple$frame <- tracks_simple$frame-1
+     segments[[j]] <- data.frame(SEGMENT_STAT(tracks_simple),"cellID"=basename(filelist[j]))
+    }
+    track_msd <- TRACK_MSD(segments,n = n,framerate=framerate,truncate = FALSE,pxsize = pixelsize,dim=dim)
+    save(track_msd,file=file.path(dir,"track_msd.Rdata"))
+
+    if(fitMSD){
+      tracks <-  TRACK_MSD_fit(track_msd,n = n,fitzero = fitzero,framerate=framerate,pxsize = pixelsize,offset=offset,dim=dim)
+      save(tracks,file=file.path(dir,"msd_fit.Rdata"))
+
+      stats <- TRACK_STAT(x=segments)
+      save(stats,file=file.path(dir,"track_stats.Rdata"))
+
+    }
+    segments_all[[basename(dir)]] <- data.frame(ldply(segments),"condition"=basename(dir))
+    msd_fit_all[[basename(dir)]] <- data.frame(ldply(tracks),"condition"=basename(dir))
+    track_stats_all[[basename(dir)]] <- data.frame(ldply(stats),"condition"=basename(dir))
+
+
+  }
+  #save data to the folder
+  save(segments_all,file=file.path(directory,paste("segments_all_",extension,".Rdata")))
+  save(msd_fit_all,file=file.path(directory,paste("msd_fit_all_",extension,".Rdata")))
+  save(track_stats_all,file=file.path(directory,paste("track_stats_all_",extension,".Rdata")))
 }
 
 
-msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NULL,ymax=0.12){
+msd_analyze_data_submask <- function(directory,condition_list,framerate,n,fitzero,min_length,pixelsize,fitMSD,offset,max_tracks,track_file_name="tracks.simple.filtered.txt",extension=""){
+  library(RImageJROI)
+  library(spatstat.utils)
+  library(spatstat)
+  segments_inside_all <- list()
+  segments_outside_all <- list()
+
+  msd_fit_inside_all <- list()
+  msd_fit_outside_all <- list()
+  track_stats_inside_all <- list()
+  track_stats_outside_all <- list()
+
+
+  for (i in 1:length(condition_list)){
+    segments_inside <- list()
+    segments_outside <- list()
+    dir <- file.path(directory,condition_list[i])
+    filelist <- list.dirs(dir,full.names = T,recursive = F)
+    total <- length(filelist)
+    # create progress bar
+    for(j in 1:total){
+      Sys.sleep(0.1)
+      tracks_simple <- read.csv(file.path(filelist[j],track_file_name),sep = "\t",header = F)
+      tracks_simple$inside <- FALSE
+      roi <- read.ijzip(file.path(filelist[j],"mask_a.zip"))
+      roi <- llply(roi, function(x){
+        area <- Area.xypolygon( list(x = x$coords[, 1], y = x$coords[, 2]))
+        if (area<0){
+          x$coords <- x$coords[ nrow(x$coords):1, ]
+        }
+        return(x)
+      })
+      roi <- llply(roi, function(x){
+        ij2spatstat(x)
+      })
+
+
+
+
+      for(i in 1:length(roi)){
+        tracks_simple$inside<-tracks_simple$inside|inside.owin(x = tracks_simple$V2,y = tracks_simple$V3,w=roi[[i]])
+      }
+      tracks_simple <- ddply(tracks_simple,"V4",function(x){
+        if(any(x$inside)){
+          x$inside <- TRUE
+        }
+        return(x)
+      })
+      inside <-tracks_simple[tracks_simple$inside==TRUE,1:8]
+      track_id <- unique(inside$V4)
+      for(k in 1:length(track_id)){
+        inside$V4[inside$V4==track_id[k]] <- (k-1)
+      }
+        outside <- tracks_simple[tracks_simple$inside==FALSE,1:8]
+        track_id <- unique(outside$V4)
+
+        for(k in 1:length(track_id)){
+          outside$V4[outside$V4==track_id[k]] <- (k-1)
+        }
+      write.table(x = cbind(sprintf("%.2f",inside$V1),sprintf("%.2f",inside$V2),sprintf("%.2f",inside$V3),inside$V4,
+                            sprintf("%.2f",inside$V5),sprintf("%.2f",inside$V6),sprintf("%.2f",inside$V7),sprintf("%.2f",inside$V8)),
+                            file = file.path(filelist[j],"tracks.simple.filtered_a.txt"),sep = "\t",col.names = F, row.names = F,quote = F)
+      write.table(x = cbind(sprintf("%.2f",outside$V1),sprintf("%.2f",outside$V2),sprintf("%.2f",outside$V3),outside$V4,
+                            sprintf("%.2f",outside$V5),sprintf("%.2f",outside$V6),sprintf("%.2f",outside$V7),sprintf("%.2f",outside$V8)),
+                  file = file.path(filelist[j],"tracks.simple.filtered_b.txt"),sep = "\t",col.names = F, row.names = F,quote = F)
+    names(tracks_simple) <- c("frame","X","Y","track","displacement","intensity","sigma","fit_error","inside")
+      segments_inside[[j]] <- data.frame(SEGMENT_STAT(tracks_simple[tracks_simple$inside==TRUE,]),"cellID"=basename(dirname(file.path(filelist[j],track_file_name))))
+      segments_outside[[j]] <- data.frame(SEGMENT_STAT(tracks_simple[tracks_simple$inside==FALSE,]),"cellID"=basename(dirname(file.path(filelist[j],track_file_name))))
+
+    }
+    track_msd_inside <- TRACK_MSD(llply(segments_inside,function(x) {
+      x[x$inside,]
+    }),n = n,framerate=framerate,truncate = FALSE)
+    track_msd_outside <- TRACK_MSD(llply(segments_outside,function(x) {
+      x[!x$inside,]
+    }),n = n,framerate=framerate,truncate = FALSE)
+
+
+      tracks_inside <-  TRACK_MSD_fit(track_msd_inside,n = n,fitzero = fitzero,framerate=framerate,offset)
+      tracks_outside <-  TRACK_MSD_fit(track_msd_outside,n = n,fitzero = fitzero,framerate=framerate,offset)
+      save(tracks_inside,file=file.path(dir,"msd_inside_fit.Rdata"))
+      save(tracks_outside,file=file.path(dir,"msd_outside_fit.Rdata"))
+
+      stats_inside <- TRACK_STAT(x=segments_inside)
+      stats_outside <- TRACK_STAT(x=segments_outside)
+
+
+
+    segments_inside_all[[basename(dir)]] <- data.frame(ldply(segments_inside),"condition"=basename(dir))
+    segments_outside_all[[basename(dir)]] <- data.frame(ldply(segments_outside),"condition"=basename(dir))
+
+    msd_fit_inside_all[[basename(dir)]] <- data.frame(ldply(tracks_inside),"condition"=basename(dir))
+    msd_fit_outside_all[[basename(dir)]] <- data.frame(ldply(tracks_outside),"condition"=basename(dir))
+    track_stats_inside_all[[basename(dir)]] <- data.frame(ldply(stats_inside),"condition"=basename(dir))
+    track_stats_outside_all[[basename(dir)]] <- data.frame(ldply(stats_outside),"condition"=basename(dir))
+
+
+
+  }
+  #save data to the folder
+  save(segments_inside_all,file=file.path(directory,paste0("segments_inside_all_",extension,".Rdata")))
+  save(segments_outside_all,file=file.path(directory,paste0("segments_outside_all_",extension,".Rdata")))
+
+  save(msd_fit_inside_all,file=file.path(directory,paste0("msd_fit_inside_all_",extension,".Rdata")))
+  save(msd_fit_outside_all,file=file.path(directory,paste0("msd_fit_outside_all_",extension,".Rdata")))
+
+  save(track_stats_all,file=file.path(directory,paste0("track_stats_all_",extension,".Rdata")))
+  save(track_stats_inside_all,file=file.path(directory,paste0("track_stats_inside_all_",extension,".Rdata")))
+
+}
+
+
+msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NULL,ymax=0.12,merge_var="cellID"){
  library(plyr)
   library(ggplot2)
   library(reshape2)
+  library(ggpol)
   theme_Publication <- function(base_size=14, base_family="sans") {
     library(grid)
     library(ggthemes)
@@ -60,7 +216,7 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
               axis.line.x = element_line(colour="black"),
               axis.line.y = element_line(colour="black"),
               axis.ticks = element_line(),
-              panel.grid.major = element_line(colour="#f0f0f0"),
+              panel.grid.major = element_line(colour="#ffffff"),
               panel.grid.minor = element_blank(),
               legend.key = element_rect(colour = NA),
               legend.position = "bottom",
@@ -69,7 +225,7 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
               legend.margin = unit(0.2, "cm"),
               legend.title = element_text(face="italic"),
               plot.margin=unit(c(10,5,5,5),"mm"),
-              strip.background=element_rect(colour="#f0f0f0",fill="#f0f0f0"),
+              strip.background=element_rect(colour="#ffffff",fill="#ffffff"),
               strip.text = element_text(face="bold")
       ))
 
@@ -78,13 +234,13 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
 
   scale_fill_Publication <- function(...){
     library(scales)
-    discrete_scale("fill","Publication",manual_pal(values = c("#386cb0","#fdb462","#7fc97f","#ef3b2c","#662506","#a6cee3","#fb9a99","#984ea3","#ffff33")), ...)
+    discrete_scale("fill","Publication",manual_pal(values = c("#c00000","#fdae61","#1f497d","#6599d9","#542788","#de77ae","#271d68","#6dc5aa")), ...)
 
   }
 
   scale_colour_Publication <- function(...){
     library(scales)
-    discrete_scale("colour","Publication",manual_pal(values = c("#386cb0","#fdb462","#7fc97f","#ef3b2c","#662506","#a6cee3","#fb9a99","#984ea3","#ffff33")), ...)
+    discrete_scale("colour","Publication",manual_pal(values = c("#c00000","#fdae61","#1f497d","#6599d9","#542788","#de77ae","#217d68","#6dc5aa")), ...)
 
   }
 
@@ -93,11 +249,25 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
   })
   tracks <- ldply(msd_fit_all)
   tracks$condition <-factor(tracks$condition, levels=names(msd_fit_all))
-  out <- ddply(tracks,.variables = c("condition","cellID")  ,function(x){
-    out <- hist(log10(x$D),breaks = seq(-5,2,0.1),plot = F)
+  out <- ddply(tracks,.variables = c("condition",merge_var)  ,function(x){
+    out <- hist(log10(x$D),breaks = seq(-7,2,0.1),plot = F)
     return(out$counts/sum(out$counts))
   })
 
+  n_tracks <- ddply(tracks,.variables = "condition",function(x){
+    nrow(x)
+  })
+
+  n_exp <- ddply(tracks,.variables = "condition",function(x){
+    length(unique(x$experiment))
+  })
+
+  n_cells <- ddply(tracks,.variables = "condition",function(x){
+    length(unique(x$cellID))
+  })
+
+  n_statistics <- data.frame(n_tracks$condition,"n_tracks" = n_tracks$V1,"n_cells" = n_cells$V1,"n_exp"=n_exp$V1)
+  write.table(n_statistics,file=file.path(directory,paste0(name,"_N_statistics.txt")),row.names = F,col.names = T)
 
   means <- ddply(out,.variables = "condition",function(x){
     colMeans(x[,-c(1,2)])
@@ -108,7 +278,7 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
 
   means <- melt(means)
   sds <- melt(sds)
-  mids <- seq(-4.9,2,0.1)
+  mids <- seq(-6.9,2,0.1)
   mids <- 10^mids
 
   histdata <- data.frame(".id"=means$condition,"x"=rep(mids,each=length(msd_fit_all)),'mean'=means$value,'se'=sds$value)
@@ -126,24 +296,29 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
 
   if(length(msd_fit_all)>2){
   q1 <- ggplot(histdata, aes(x=x, y=mean,colour=.id,fill=.id)) +
-    geom_smooth(stat="identity")+
+    geom_line(stat="identity")+
+    geom_ribbon(aes(ymin=mean-abs(se), ymax=mean+abs(se),colour=NULL), alpha=0.4)+
+    ylim(-0.005,ymax)+
     # geom_smooth(stat="smooth",span = 0.2)+
-    geom_ribbon(aes(ymin=mean-abs(se), ymax=mean+abs(se),colour=NULL), alpha=0.4)+ylim(-0.005,ymax)+
-    theme(text = element_text(size=20),legend.position = "none")+
+    theme(text = element_text(size=12),legend.position = "none")+
     facet_wrap(~.id,nrow=2,dir="v") +scale_x_continuous(trans="log10")+
-    scale_colour_Publication()+scale_fill_Publication()+theme_Publication(base_size=16)+
+    scale_colour_Publication()+scale_fill_Publication()+theme_Publication(base_size=12)+
     theme(legend.position = "none")+ geom_vline(aes(xintercept=threshold),color = "red",linetype="dashed")+
-    xlab(expression(D[app]~mu~m^{2}/s))+ylab("")
+    xlab(expression(D[app]~mu~m^{2}/s))+ylab("")+theme(axis.line.x = element_line(color="black"),
+                                                       axis.line.y = element_line(color="black"))
   } else {
     q1 <- ggplot(histdata, aes(x=x, y=mean,colour=.id,fill=.id)) +
-      geom_smooth(stat="identity")+
+      geom_line(stat="identity")+
+      geom_ribbon(aes(ymin=mean-se, ymax=mean+se,colour=NULL), alpha=0.4)+
+
       # geom_smooth(stat="smooth",span = 0.2)+
-      geom_ribbon(aes(ymin=mean-se, ymax=mean+se,colour=NULL), alpha=0.4)+ylim(-0.005,ymax)+
-      theme(text = element_text(size=20),legend.position = "none")+
+      ylim(-0.005,ymax)+
+      theme(text = element_text(size=12),legend.position = "none")+
       facet_wrap(~.id,nrow=1,dir="h") +scale_x_continuous(trans="log10")+
-      scale_colour_Publication()+scale_fill_Publication()+theme_Publication(base_size=16)+
+      scale_colour_Publication()+scale_fill_Publication()+theme_Publication(base_size=12)+
       theme(legend.position = "none")+ geom_vline(aes(xintercept=threshold),color = "red",linetype="dashed")+
-      xlab(expression(D[app]~mu~m^{2}/s))+ylab("")
+      xlab(expression(D[app]~mu~m^{2}/s))+ylab("")+theme(axis.line.x = element_line(color="black"),
+                                                               axis.line.y = element_line(color="black"))
   }
 
   print(q1)
@@ -159,7 +334,7 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
     axis.text = element_text(colour="grey")),bg = "transparent",dpi=400,limitsize = F,units="mm",height=100, width=150)
 
   results <- llply(msd_fit_all,function(x) {
-    ddply(x,.variables = "cellID",function(x){
+    ddply(x,.variables = merge_var,function(x){
       out <- table(x$D>threshold)/length(x$D)
      # out <- c(out,x$cellID[1])
       return(out)
@@ -225,7 +400,7 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
       scale_colour_Publication()+scale_fill_Publication()+theme(legend.position = "none")+
       xlab("")+ylab("% increase in immobilization")+ylim(c(0,100))
     print(qx)
-    ggsave(filename = file.path(directory,paste0(name,"_immobile_increase.pdf")),plot = qx)
+    ggsave(filename = file.path(directory,paste0(name,"_immobile_increase.pdf")),plot = qx,)
 
 
   }
@@ -233,8 +408,8 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
 #dotplot
   q3 <- ggplot(results2,aes(x=factor(.id),y=immobile,fill=.id))+ theme(axis.text.x = element_text(angle = 90, hjust = 1))+
     geom_dotplot(binaxis = "y", stackdir = "center",dotsize = 0.7)+ xlab("")+
-    scale_colour_Publication()+scale_fill_Publication()+theme(legend.position = "none")+
-    ylim(0,0.4)+stat_summary(fun.data=mean_cl_normal,
+    scale_colour_Publication()+scale_fill_Publication()+theme(legend.position = "none")+theme_Publication(base_size=12)+
+    ylim(0,0.5)+stat_summary(fun.data=mean_cl_normal,
                              geom="errorbar", color="black", width=0.3,size=1) +
     stat_summary(fun.y=mean, geom="point", color="black")
   print(q3)
@@ -251,18 +426,12 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
 
 #boxplot
   q4 <- ggplot(results2,aes(x=factor(.id),y=immobile,fill=.id))+ theme(axis.text.x = element_text(angle = 90, hjust = 1))+
-    geom_boxplot()+ xlab("")+ scale_colour_Publication()+scale_fill_Publication()+theme(legend.position = "none")+
-    ylim(0,0.4)
+    geom_boxjitter(errorbar.draw = TRUE,jitter.height = 0, jitter.width = 0.04)+ xlab("")+
+    scale_colour_Publication()+scale_fill_Publication()+theme(legend.position = "none")+theme_Publication(base_size=12)+
+    ylim(0,0.5)
   print(q4)
   ggsave(filename = file.path(directory,paste0(name,"_immobile_boxplot.pdf")),plot = q4,units="mm",height=100, width=150)
-  ggsave(filename = file.path(directory,paste0(name,"_immobile_boxplot.png")),plot = q4+
-           theme(
-             plot.background = element_rect(fill = "transparent"),axis.line.x = element_line(colour="grey"),
-             axis.line.y = element_line(colour="grey"),
-             axis.ticks = element_line(colour="grey"),
-             axis.title.y = element_text(angle=90,vjust =2,colour="grey"),
-             axis.title.x = element_text(vjust = -0.2,colour="grey"),
-             axis.text = element_text(colour="grey")),bg = "transparent",dpi=400,limitsize = F,units="mm",height=100, width=75)
+  ggsave(filename = file.path(directory,paste0(name,"_immobile_boxplot.png")),plot = q4,bg = "transparent",dpi=400,limitsize = F,units="mm",height=100, width=75)
 
   #qa <- grid.arrange(q1,q2,ncol=2)
 }
