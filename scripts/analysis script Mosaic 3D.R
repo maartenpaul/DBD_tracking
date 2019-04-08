@@ -12,7 +12,7 @@ n <- 4 #number of timepoints taken into account for MSD fit
 fitzero <- TRUE #should fit go through origin (0,0)
 
 min_length <- 6 #minimum length track
-pixelsize <- 100 #nm
+pixelsize <- c(120,120,410) #nm
 fitMSD <- T
 offset <- 4*(0.01)^2#experimentally determined
 max_tracks <- 500 #maximum number of tracks per frame else exclude tracks from dataset, avoids mislinking of tracks

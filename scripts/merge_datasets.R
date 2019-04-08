@@ -25,11 +25,20 @@ all_data[["dCTD -HU"]] <- merge_dataset(datasets[5],c("dCTD A2 -HU"),con_name="d
 all_data[["dCTD +HU"]] <- merge_dataset(datasets[5],c("dCTD A2 +HU"),con_name="dCTD +HU")
 
 save(all_data,file = file.path("D:/Stack/Genetics/Tracking data merged/","BRCA2_HU_all_data.Rdata"))
-msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_HU",threshold=0.05)
+msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_HU",threshold=0.05,merge_var = "experiment")
 msd_histogram(all_data[c(1,2)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_HU_WT",threshold=0.05)
 msd_histogram(all_data[c(3,4)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_HU_dDBDdCTD",threshold=0.05)
 msd_histogram(all_data[c(5,6)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_HU_dDBD",threshold=0.05)
 msd_histogram(all_data[c(1,2,3,4)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_HU+dDBDdCTD_WT",threshold=0.05)
+
+all_data2 <- ldply(all_data)
+cond <- data.frame(ldply(strsplit(all_data2$condition,split = " ")))
+names(cond) <- c("type","treatment")
+all_data2 <- cbind(all_data2,cond)
+
+ggplot(all_data2,aes(x=D,group=treatment,col=treatment))+geom_histogram(binwidth=0.2,position = "identity",aes(y=..count../sum(..count..)),alpha=0.3)+scale_x_log10()+facet_grid(.~type)
+
+ggplot(all_data2,aes(x=D,col=treatment))+scale_x_log10()+facet_grid(.~type)+geom_histogram(binwidth=0.2,aes(y=..density..), alpha=0.3,position="identity")
 
 # BRCA2 MMC ---------------------------------------------------------------
 all_data <- list()
@@ -73,6 +82,87 @@ load(file.path("D:/Stack/Genetics/Tracking data merged/","BRCA2_IR_all_data.Rdat
 msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_IR",threshold=0.05)
 msd_histogram(all_data[c(1,2)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_WT_IR",threshold=0.05)
 msd_histogram(all_data[c(3,4)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_dDBDdCTD_IR",threshold=0.05)
+
+# BRCA2 IR iRFP720 ----------------------------------------------------------------
+
+all_data <- list()
+datasets <- c("F:/181005 BRCA2-Halo PCNA-iRFP IR tracking/","F:/181010 BRCA2-Halo PCNA-iRFP IR tracking/","F:/181012 BRCA2-Halo PCNA-iRFP IR tracking/")
+all_data[["WT -IR"]] <- merge_dataset(datasets[c(1,3)],c("WT G10 -IR","WT G10 -IR"),con_name="WT -IR")
+
+all_data[["WT +IR"]] <- merge_dataset(datasets[c(1,3)],c("WT G10 +IR","WT G10 +IR"),con_name="WT +IR")
+
+all_data[["dDBD -IR"]] <- merge_dataset(datasets[c(1,2)],c("dDBD E4 -IR","dDBD E4 -IR"),con_name="dDBD -IR")
+
+all_data[["dDBD +IR"]] <- merge_dataset(datasets[c(1,2)],c("dDBD E4 +IR","dDBD E4 +IR"),con_name="dDBD +IR")
+
+all_data[["dCTD -IR"]] <- merge_dataset(datasets[c(1,2)],c("dCTD A2 -IR","dCTD A2 -IR"),con_name="dCTD -IR")
+
+all_data[["dCTD +IR"]] <- merge_dataset(datasets[c(1,2)],c("dCTD A2 +IR","dCTD A2 +IR"),con_name="dCTD +IR")
+
+all_data[["dDBDdCTD -IR"]] <- merge_dataset(datasets[c(2,3)],c("dDBDdCTD F4 -IR","dDBDdCTD F4 -IR"),con_name="dDBDdCTD -IR")
+
+all_data[["dDBDdCTD +IR"]] <- merge_dataset(datasets[c(2,3)],c("dDBDdCTD F4 +IR","dDBDdCTD F4 +IR"),con_name="dDBDdCTD +IR")
+
+
+save(all_data,file = file.path("D:/Stack/Genetics/Tracking data merged/","BRCA2_IR_all_data.Rdata"))
+load(file.path("D:/Stack/Genetics/Tracking data merged/","BRCA2_IR_all_data.Rdata"))
+
+msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_IR",threshold=0.05)#,merge_var = "cellID")
+msd_histogram(all_data[c(7,8)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_WT_IR",threshold=0.1)#,merge_var = "cellID")
+msd_histogram(all_data[c(3,4)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_dDBDdCTD_IR",threshold=0.05,merge_var = "cellID")
+
+# BRCA2 dDdC#2 IR iRFP720 ----------------------------------------------------------------
+
+all_data <- list()
+datasets <- c("D:/Imaging data/190206 MPexp1902_01 dDdC IR tracking/","D:/Imaging data/190206_2 MPexp1902_01 dDdC IR tracking_2/")
+all_data[["dDBDdCTD -IR"]] <- merge_dataset(datasets,c("dDdC F4 -IR","dDdC F4 -IR"),con_name="dDBDdCTD -IR")
+
+all_data[["dDBDdCTD +IR"]] <- merge_dataset(datasets,c("dDdC F4 +IR","dDdC F4 +IR"),con_name="dDBDdCTD +IR")
+
+
+save(all_data,file = file.path("D:/Stack/Genetics/Tracking data merged/","BRCA2_dDdCv2_IR_all_data.Rdata"))
+load(file.path("D:/Stack/Genetics/Tracking data merged/","BRCA2_dDdCv2_IR_all_data.Rdata"))
+
+msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_dDdCv2_IR",threshold=0.05)#,merge_var = "cellID")
+
+
+
+# BRCA2 N-terminal iRFP720  --------------------------------------------------------------
+
+all_data <- list()
+datasets <- c("F:/181210 Halo-BRCA2 iRFP270 tracking/","F:/181212 Halo-BRCA2 iRFP270 tracking/","F:/181214 PALB2-Halo iRFP270-PCNA tracking")
+all_data[["WT -IR"]] <- merge_dataset(datasets[2],c("Halo-BRCA2 F4 -IR"),con_name="WT -IR")
+
+all_data[["WT +IR"]] <- merge_dataset(datasets[2],c("Halo-BRCA2 F4 +IR"),con_name="WT +IR")
+
+all_data[["d1-40 -IR"]] <- merge_dataset(datasets[2],c("d1-40 E3 -IR"),con_name="d1-40 -IR")
+
+all_data[["d1-40 +IR"]] <- merge_dataset(datasets[2],c("d1-40 E3 +IR"),con_name="d1-40 +IR")
+
+all_data[["PALB2 -IR"]] <- merge_dataset(datasets[3],c("PALB2-Halo A6 -IR"),con_name="PALB2 -IR")
+
+all_data[["PALB2 +IR"]] <- merge_dataset(datasets[3],c("PALB2-Halo A6 +IR"),con_name="PALB2 +IR")
+
+save(all_data,file = file.path("D:/Stack/Genetics/Tracking data merged/","N_BRCA2_IR_iRFP_all_data.Rdata"))
+load(file.path("D:/Stack/Genetics/Tracking data merged/","N_BRCA2_IR_iRFP_all_data.Rdata"))
+
+msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="N_BRCA2_iRFP",threshold=0.05)#,merge_var = "experiment")
+#msd_histogram(all_data[c(1,2)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_WT_IR",threshold=0.1)#,merge_var = "cellID")
+#msd_histogram(all_data[c(3,4)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_dDBDdCTD_IR",threshold=0.05,merge_var = "cellID")
+
+
+# PALB2 iRFP720  --------------------------------------------------------------
+all_data <- list()
+datasets <- c("F:/181214 PALB2-Halo iRFP270-PCNA tracking")
+all_data[["PALB2 -IR"]] <- merge_dataset(datasets[1],c("PALB2-Halo A6 -IR"),con_name="PALB2 -IR")
+
+all_data[["PALB2 +IR"]] <- merge_dataset(datasets[1],c("PALB2-Halo A6 +IR"),con_name="PALB2 +IR")
+
+
+save(all_data,file = file.path("D:/Stack/Genetics/Tracking data merged/","PALB2_IR_iRFP_all_data.Rdata"))
+load(file.path("D:/Stack/Genetics/Tracking data merged/","PALB2_IR_iRFP_all_data.Rdata"))
+
+msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="PALB2_IR_iRFP",threshold=0.05)
 
 
 # ##PALB2 HU --------------------------------------------------------------

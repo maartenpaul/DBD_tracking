@@ -51,7 +51,7 @@ msd_analyze_data_mosaic <- function(directory,condition_list,framerate,n,fitzero
     # create progress bar
     for(j in 1:total){
       Sys.sleep(0.1)
-      tracks_simple <- read.csv(filelist[i],sep = ",",header = T)
+      tracks_simple <- read.csv(filelist[j],sep = ",",header = T)
       names(tracks_simple) <- c("id","track","frame","X","Y","Z","m0","m1","m2","m3","m4","NPscore")
 
       tracks_simple <- tracks_simple[,c(3,4,5,2,6,7,8,9,10,11,12)]
