@@ -5,7 +5,7 @@ track_msd <- function(x,n=5,framerate=0.1,pxsize=100,truncate=F,dim=2){
   } else if (dim==3){
     x$X <- (x$X*pxsize[1])/1000 #convert pixelsize to um
     x$Y <- (x$Y*pxsize[2])/1000
-    x$Z <- (x$Y*pxsize[3])/1000
+    x$Z <- (x$Z*pxsize[3])/1000
   }
   #calculate MSD for n time intervals
   coef <- ddply(x,.variables = "track",.fun= function(x) {

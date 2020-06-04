@@ -484,3 +484,32 @@ sos_to_spoton_csv <- function(condition_list,directory,framerate,pixelsize){
     }
   }
 }
+
+merge_dataset_for_spoton <- function(dirs,conds,con_name,framerate,pixelsize,output){
+  if(length(dirs)!=length(conds)){
+    stop("dirs not equal to conds")
+  }
+  for(i in 1:length(dirs)){
+    segments <- list()
+    dir <- file.path(dirs[i],conds)
+    filelist <- list.dirs(dir,full.names = T,recursive = F)
+    date <- basename(dirs[i])
+    date <- strsplit(date," ")
+    date <- date[[1]][1]
+    #filelist <- filelist[-grep("skip",x = filelist)]
+    total <- length(filelist)
+    # create progress bar
+    for(j in 1:total){
+      #  Sys.sleep(0.1)
+      tracks_simple <- read.csv(file.path(filelist[j],"tracks.simple.filtered.txt"),sep = "\t",header = F)
+      spoton <- tracks_simple[c(1,1,4,2,3)]
+      spoton[,2] <- spoton[,2]/framerate/1000 #seconds
+      spoton[,4:5] <- spoton[,4:5]*pixelsize/1000 #um
+      spoton <- cbind(seq(0,nrow(spoton)-1),spoton)
+      names(spoton) <- c("","frame","t","trajectory","x","y")
+      write.csv(spoton,file = file.path(output,paste(con_name,date,j,"tracks.spoton.txt",sep = "_")),row.names=FALSE,quote = FALSE)
+    }
+
+
+  }
+}
