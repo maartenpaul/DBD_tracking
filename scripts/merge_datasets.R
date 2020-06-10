@@ -58,7 +58,7 @@ all_data[["dDBD -MMC"]] <- merge_dataset("D:/Stack/Genetics/170809 tracking MMC 
 all_data[["dDBD +MMC"]] <- merge_dataset("D:/Stack/Genetics/170809 tracking MMC WT_dDBD_+CTD",c("dDBD A4 MMC"),con_name="dDBD +MMC")
 
 save(all_data,file = file.path("D:/Stack/Genetics/Tracking data merged/","BRCA2_MMC_all_data.Rdata"))
-msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="MMC",threshold=0.05)
+msd_histogram(all_data,directory = file.path("D:/Temp_data/"),name="MMC",threshold=0.05)
 msd_histogram(all_data[c(1,2)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_MMC_WT",threshold=0.05)
 msd_histogram(all_data[c(3,4)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_MMC_dDBDdCTD",threshold=0.05)
 msd_histogram(all_data[c(1,2,3,4)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_MMC_WT+dDBDdCTD",threshold=0.05)
@@ -150,6 +150,47 @@ msd_histogram(all_data,directory = file.path("D:/Stack/Genetics/Tracking data me
 #msd_histogram(all_data[c(1,2)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_WT_IR",threshold=0.1)#,merge_var = "cellID")
 #msd_histogram(all_data[c(3,4)],directory = file.path("D:/Stack/Genetics/Tracking data merged/"),name="BRCA2_dDBDdCTD_IR",threshold=0.05,merge_var = "cellID")
 
+
+
+
+# BRCA2 MMC iRFP720-PCNA --------------------------------------------------
+
+
+all_data <- list()
+# 180702 WT (only 5 +MMC) dCTD D:/OneDrive/Data2/180702 BRCA2_Halo_WT_dCTD PCNA MMC
+#
+# Exp1905_01 WT and dDBDdCTD (~11 cells) D:/OneDrive/Data2/190504 MPexp1905_01 BRCA2 tracking MMC
+#
+# Exp1912_003 Run 1 dDBD and dDBDdCTD (~9 cells) D:/OneDrive/Data2/191211 ExpMP1912_004 MMC tracking/Run 1
+#
+# Exp1912_003 Run 2 dDBD and dCTD (~9 cells) D:/OneDrive/Data2/191211 ExpMP1912_004 MMC tracking/Run 2
+
+
+datasets <- c("D:/OneDrive/Data2/180702 BRCA2_Halo_WT_dCTD PCNA MMC/","D:/OneDrive/Data2/190504 MPexp1905_01 BRCA2 tracking MMC/",
+              "D:/OneDrive/Data2/191211 ExpMP1912_004 MMC tracking/Run 1/","D:/OneDrive/Data2/191211 ExpMP1912_004 MMC tracking/Run 2/","D:/OneDrive/Data2/200207 ExpMP2002_002 MMC tracking/")
+all_data[["WT -MMC"]] <- merge_dataset(datasets[c(1,2,5)],c("WT G10 mock","WTG10 iRFP720PCNA mock","WT G10 -MMC"),con_name="WT -MMC")
+
+all_data[["WT +MMC"]] <- merge_dataset(datasets[c(1,2,5)],c("WT G10 MMC","WTG10 iRFP720PCNA MMC","WT G10 -MMC"),con_name="WT +MMC")
+
+all_data[["dDBD -MMC"]] <- merge_dataset(datasets[c(3,4)],c("dDBD E4 -MMC","dDBD E4 -MMC"),con_name="dDBD -MMC")
+
+all_data[["dDBD +MMC"]] <- merge_dataset(datasets[c(3,4)],c("dDBD E4 +MMC","dDBD E4 +MMC"),con_name="dDBD +MMC")
+
+all_data[["dCTD -MMC"]] <- merge_dataset(datasets[c(1,4)],c("dCTD A2 mock","dCTD A2 -MMC"),con_name="dCTD -MMC")
+
+all_data[["dCTD +MMC"]] <- merge_dataset(datasets[c(1,4)],c("dCTD A2 MMC","dCTD A2 +MMC"),con_name="dCTD +MMC")
+
+all_data[["dDBDdCTD -MMC"]] <- merge_dataset(datasets[c(2,3,5)],c("dDBDdCTD F4 iRFP720PCNA mock","dDBDdCTD F4 -MMC","dDdC F4 -MMC"),con_name="dDBDdCTD -MMC")
+
+all_data[["dDBDdCTD +MMC"]] <- merge_dataset(datasets[c(2,3,5)],c("dDBDdCTD F4 iRFP720PCNA MMC","dDBDdCTD F4 +MMC","dDdC F4 +MMC"),con_name="dDBDdCTD +MMC")
+
+
+save(all_data,file = file.path("D:/OneDrive/Data2/Tracking data merged/","BRCA2_MMC_PCNA_all_data.Rdata"))
+load(file.path("D:/OneDrive/Data2/Tracking data merged/","BRCA2_MMC_PCNA_all_data.Rdata"))
+
+msd_histogram(all_data,directory = file.path("D:/OneDrive/Data2/Tracking data merged/"),name="BRCA2_MMC_PCNA",threshold=0.05)#,merge_var = "cellID")
+msd_histogram(all_data[c(7,8)],directory = file.path("D:/OneDrive/Data2/Tracking data merged/"),name="BRCA2_WT_MMC_PCNA",threshold=0.1)#,merge_var = "cellID")
+msd_histogram(all_data[c(3,4)],directory = file.path("D:/OneDrive/Data2/Tracking data merged/"),name="BRCA2_dDBDdCTD_IR",threshold=0.05,merge_var = "cellID")
 
 # PALB2 iRFP720  --------------------------------------------------------------
 all_data <- list()
