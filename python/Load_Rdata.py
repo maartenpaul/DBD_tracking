@@ -1,6 +1,6 @@
 # Set pixelsize [um] and time step [s] corresponding to acquisition parameters
 pixSize = 0.100
-t = 0.030
+t = 0.032
 
 ##########################################################################################################################
 

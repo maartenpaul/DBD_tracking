@@ -1,3 +1,7 @@
+# Get predicted/original states
+reshapedTracks = []
+numFeat = 1 + ('meanMSD' in addFeat) * maxOrder + ('xy' in addFeat) * 4
+
 
 
 allStates = []
