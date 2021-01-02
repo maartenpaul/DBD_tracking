@@ -139,6 +139,8 @@ segs_nest <- segments_all %>%
 
 save(segs_nest,file = "/home/maarten/Documents/DBD paper analysis/segments_tbl.Rdata")
 write_csv(segs_nest,path = "/home/maarten/Documents/DBD paper analysis/segments_tbl.txt")
+load(file = "/home/maarten/Documents/DBD paper analysis/segments_tbl.Rdata")
+
 
 segs_nest <- segs_nest %>%
   filter(condition!="WT G10 cell cycle")
@@ -158,6 +160,21 @@ p <- segs_nest %>%
   xlab("")+ylab(expression(D[app]~mu~m^{2}/s))+ylim(0,3)
 p
 ggsave(p,filename = "plots/diffusionrate_fast.pdf",width = 8,height = 8,units = "in" )
+
+#statistics
+library(rstatix)
+
+x <- segs_nest %>%
+  filter(D_ML>0,state==0)%>%
+  filter(D_ML>0,grepl("-IR",condition))%>%
+  dplyr::distinct(condition,cellID,tracklet,.keep_all=T)%>%
+  group_by(condition,cellID)%>%
+  dplyr::summarise(mean=mean(D_ML)) %>%
+  ungroup()
+x$condition <- droplevels(x$condition)
+
+  pairwise_t_test(data = x,formula = mean ~ condition,paired = F)
+
 
 
 #only -IR
@@ -185,7 +202,11 @@ ggplot(aes(y=fraction,fill=condition))+geom_boxjitter(errorbar.draw = TRUE,jitte
 plt
 ggsave(plt,filename = "plots/immobile_fractions.pdf",width = 8,height = 8,units = "in" )
 
-
+#statistics
+x <- fractions %>%
+  filter(state==2) %>%
+  ungroup()
+stats <- pairwise_t_test(data = x,formula = fraction ~ condition,paired = F)
 
 
 fractions %>%
