@@ -1,8 +1,15 @@
+#import packages
 library(tidyverse)
 library(plyr)
 library(doParallel)
-
+library(reticulate)
+library(tidyverse)
+library(reshape2)
 library(ggpol)
+library(rstatix)
+
+
+#functions for ggplot plot layout adapted from: https://rpubs.com/Koundy/71792
 theme_Publication <- function(base_size=14, base_family="sans") {
   library(grid)
   library(ggthemes)
@@ -35,11 +42,9 @@ theme_Publication <- function(base_size=14, base_family="sans") {
 
 }
 
-
 scale_fill_Publication <- function(...){
   library(scales)
   discrete_scale("fill","Publication",manual_pal(values = c("#c00000","#fdae61","#1f497d","#6599d9","#542788","#de77ae","#271d68","#6dc5aa")), ...)
-
 }
 
 scale_colour_Publication <- function(...){
@@ -48,10 +53,12 @@ scale_colour_Publication <- function(...){
 
 }
 
-#run ML MSS
-datasets <- c("/media/OIC-station2/Genetics/181005 BRCA2-Halo PCNA-iRFP IR tracking/","/media/OIC-station2/Genetics/181010 BRCA2-Halo PCNA-iRFP IR tracking/","/media/OIC-station2/Genetics/181012 BRCA2-Halo PCNA-iRFP IR tracking/")
+#select data sets processed with "analysis script v2.R"
+datasets <- c("/media/OIC-station2/Genetics/181005 BRCA2-Halo PCNA-iRFP IR tracking/",
+              "/media/OIC-station2/Genetics/181010 BRCA2-Halo PCNA-iRFP IR tracking/",
+              "/media/OIC-station2/Genetics/181012 BRCA2-Halo PCNA-iRFP IR tracking/")
 segments <- list()
-for(x in datasets){
+for(x in datasets){ #load files
   load(file.path(x,"segments_all.Rdata"))
   segments_all <- ldply(segments_all,.id = NA)
   segments_all$.id <- NULL
@@ -60,12 +67,15 @@ for(x in datasets){
 
 segments_all <- ldply(segments)
 rm(segments)
+
+#create unique cellID
 segments_all$cellID <- paste0(segments_all$cellID,segments_all$.id)
-#calculate MSD and MSS
 
 
+#source functions (python)for ML-MSS analysis
 source('python/ML_py.R')
 
+#segment tracks
 segments_all <- ddply(segments_all, .variables = c("condition","cellID"), function(x){
     ML_segment_tracks(x)
 })
@@ -103,6 +113,8 @@ registerDoParallel(cl)
 stopCluster(cl)
 proc.time() - ptm
 
+
+#calculate MSD and MSS
 numPmsd <- 4
 numPmss <- 4
 minLen <- 6
@@ -121,16 +133,6 @@ MSD_MSS <- function(x){
   }
 }
 
-MSD_only <- function(x){
-  if(nrow(x)>10){
-    out <- getMSDandMSS_R(x$X,x$Y)
-    return(out[[1]])
-  } else {
-    return(NA)
-  }
-}
-
-library(tidyverse)
 segs_nest <- segments_all %>%
   select(cellID,condition,tracklet,X,Y) %>%
   group_by(cellID,condition,tracklet) %>%
@@ -141,13 +143,25 @@ save(segs_nest,file = "/home/maarten/Documents/DBD paper analysis/segments_tbl.R
 write_csv(segs_nest,path = "/home/maarten/Documents/DBD paper analysis/segments_tbl.txt")
 load(file = "/home/maarten/Documents/DBD paper analysis/segments_tbl.Rdata")
 
-
 segs_nest <- segs_nest %>%
   filter(condition!="WT G10 cell cycle")
 
 segs_nest$condition <- factor(segs_nest$condition,levels=c("WT G10 -IR","WT G10 +IR","dDBD E4 -IR","dDBD E4 +IR","dCTD A2 -IR","dCTD A2 +IR","dDBDdCTD F4 -IR","dDBDdCTD F4 +IR"))
 
-#showing the diffusion rate for fast fractions
+
+#calculate statistics
+x <- segs_nest %>%
+  filter(D_ML>0,state==0)%>%
+  filter(D_ML>0,grepl("-IR",condition))%>%
+  dplyr::distinct(condition,cellID,tracklet,.keep_all=T)%>%
+  group_by(condition,cellID)%>%
+  dplyr::summarise(mean=mean(D_ML)) %>%
+  ungroup()
+x$condition <- droplevels(x$condition)
+
+rstatix::pairwise_t_test(data = x,formula = mean ~ condition,paired = F)
+
+#plotting the diffusion rate for fast fractions
 p <- segs_nest %>%
   filter(D_ML>0,state==0)%>%
   filter(D_ML>0,grepl("-IR",condition))%>%
@@ -161,23 +175,8 @@ p <- segs_nest %>%
 p
 ggsave(p,filename = "plots/diffusionrate_fast.pdf",width = 8,height = 8,units = "in" )
 
-#statistics
-library(rstatix)
 
-x <- segs_nest %>%
-  filter(D_ML>0,state==0)%>%
-  filter(D_ML>0,grepl("-IR",condition))%>%
-  dplyr::distinct(condition,cellID,tracklet,.keep_all=T)%>%
-  group_by(condition,cellID)%>%
-  dplyr::summarise(mean=mean(D_ML)) %>%
-  ungroup()
-x$condition <- droplevels(x$condition)
-
-  pairwise_t_test(data = x,formula = mean ~ condition,paired = F)
-
-
-
-#only -IR
+#analyze  -IR
 segs_nest %>%
   filter(D_ML>0,grepl("-IR",condition))%>%
   dplyr::distinct(condition,cellID,tracklet,.keep_all=T)%>%
@@ -202,53 +201,10 @@ ggplot(aes(y=fraction,fill=condition))+geom_boxjitter(errorbar.draw = TRUE,jitte
 plt
 ggsave(plt,filename = "plots/immobile_fractions.pdf",width = 8,height = 8,units = "in" )
 
-#statistics
-x <- fractions %>%
-  filter(state==2) %>%
-  ungroup()
-stats <- pairwise_t_test(data = x,formula = fraction ~ condition,paired = F)
-
-
-fractions %>%
-  filter(state==2) %>%
-  mutate(expID=str_split(fractions$cellID,pattern = "30m",simplify = T,)[3])%>%
-  ggplot(aes(y=fraction,x=condition,fill=condition))+geom_dotplot(binaxis='y', stackdir='center')+ylab("immobile fraction")+
-  scale_colour_Publication()+scale_fill_Publication()+theme_Publication(base_size=12)+ stat_summary(fun.data=mean_sdl, fun.args = list(mult=1),
-                                                                                                    geom="errorbar", color="black", width=0.5) +
-  stat_summary(fun.y=mean, geom="point", color="black")
-
-
-x <- fractions %>%
-  filter(state==2)
-
-t.test(subset(x,condition=="dD -IR")$fraction,subset(x,condition=="WT G10 +IR")$fraction)
-
-  group_by(condition)%>%
-  dplyr::summarise(median=median(mean),sd(mean))%>%
-  ggplot(aes(x=median,y=condition))+geom_col()
-
-
-k <- segs_nest %>%
-  filter(D_ML>0)%>%
-  dplyr::distinct(condition,cellID,tracklet,.keep_all=T)%>%
-  mutate(state_str=as.character(state))
-
-x <- group_by(k,condition) %>%
-  group_by(condition,state)%>%
-  dplyr::summarise(number=n())%>%
-  group_by(condition) %>%
-  dplyr::mutate(fraction=number/sum(number))
-
-y <- group_by(k,condition) %>%
-  group_by(condition,cellID,state)%>%
-  dplyr::summarise(number=n())%>%
-  group_by(condition,cellID) %>%
-  dplyr::mutate(fraction=number/sum(number)) %>%
-  group_by(condition,state) %>%
-  dplyr::summarise(mean_fraction=round(mean(fraction),digits = 2),sd_fraction=round(sd(fraction),digits = 2))
 
 
 
+#plot diffusion rate histograms
 p <- segs_nest %>%
   filter(D_ML>0)%>%
   dplyr::distinct(condition,cellID,tracklet,.keep_all=T)%>%
@@ -265,28 +221,3 @@ geom_text(data=subset(y,state==2 ), aes(x=.003, y=0.07, label=paste0("+/-",sd_fr
 
 p
 ggsave(p,filename = "plots/diffusionhistograms.pdf",width = 8,height = 8,units = "in" )
-'
-p <- segs_nest %>%
-  filter(D_Smmss>0)%>%
-  dplyr::distinct(condition,cellID,tracklet,.keep_all=T)%>%
-  mutate(state_str=as.character(state))%>%
-  ggplot(aes(x=D_Smmss,fill=state_str,y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]))+geom_histogram(position="identity",alpha=0.5)+scale_x_log10(limits=c(0.0001,10))+facet_wrap(.~condition,ncol=2)+
-  scale_colour_Publication()+scale_fill_Publication()+theme_Publication(base_size=12)+ theme(legend.position = "none")+ylab("relative frequency")+ xlab(expression(D[app]~mu~m^{2}/s))
-p
-
-
-#apparent dwell times
-segs_nest %>%
-  filter(D_ML>0) %>%
-  group_by(condition,cellID,tracklet,state)%>%
-  dplyr::summarize(length=n())%>%
-  mutate(state_str=as.character(state))%>%
-  ggplot(aes(x=length,fill=state_str))+geom_density(position="identity",alpha=0.5)+facet_wrap(.~condition,ncol=2)+
-  scale_colour_Publication()+scale_fill_Publication()+theme_Publication(base_size=12)+ theme(legend.position = "none")+ylab("relative frequency")+ xlab(expression(D[app]~mu~m^{2}/s))
-
-x<- segs_nest %>%
-  filter(D_ML>0) %>%
-  group_by(condition,cellID,tracklet,state)%>%
-  dplyr::summarize(length=n())%>%
-  group_by(condition,state)%>%
-  dplyr::summarize(dwelltime=mean(length))

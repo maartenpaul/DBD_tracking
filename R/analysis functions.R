@@ -3,23 +3,20 @@ msd_analyze_data <- function(directory,condition_list,framerate,n,fitzero,min_le
   msd_fit_all <- list()
   track_stats_all <- list()
 
-  for (i in 1:length(condition_list)){
+  for (i in 1:length(condition_list)){ #loop over the different conditions of the acquired data which is organized in sub-folders
     segments <- list()
     dir <- file.path(directory,condition_list[i])
     filelist <- list.dirs(dir,full.names = T,recursive = F)
-    total <- length(filelist)
-    # create progress bar
-    for(j in 1:total){
-      Sys.sleep(0.1)
-      tracks_simple <- read.csv(file.path(filelist[j],track_file_name),sep = "\t",header = F)
-      names(tracks_simple) <- c("frame","X","Y","track","displacement","intensity","sigma","fit_error")
-      segments[[j]] <- data.frame(SEGMENT_STAT(tracks_simple),"cellID"=basename(dirname(file.path(filelist[j],track_file_name))))
+    for(j in 1:length(filelist)){
+      tracks_simple <- read.csv(file.path(filelist[j],track_file_name),sep = "\t",header = F) #import tab separate file
+      names(tracks_simple) <- c("frame","X","Y","track","displacement","intensity","sigma","fit_error") #adjust column names
+      segments[[j]] <- data.frame(SEGMENT_STAT(tracks_simple),"cellID"=basename(dirname(file.path(filelist[j],track_file_name)))) #analyze the segments angle and displacements
     }
-    track_msd <- TRACK_MSD(segments,n = n,framerate=framerate,truncate = FALSE,pxsize = pixelsize)
+    track_msd <- TRACK_MSD(segments,n = n,framerate=framerate,truncate = FALSE,pxsize = pixelsize) #obtain MSD along multiple time intervals
     save(track_msd,file=file.path(dir,"track_msd.Rdata"))
 
     if(fitMSD){
-      tracks <-  TRACK_MSD_fit(track_msd,n = n,fitzero = fitzero,framerate=framerate,offset=offset,pxsize = pixelsize)
+      tracks <-  TRACK_MSD_fit(track_msd,n = n,fitzero = fitzero,framerate=framerate,offset=offset,pxsize = pixelsize) #fit linear curve to the MSD~t curve per track
       save(tracks,file=file.path(dir,"msd_fit.Rdata"))
 
       stats <- TRACK_STAT(x=segments)
@@ -37,162 +34,6 @@ msd_analyze_data <- function(directory,condition_list,framerate,n,fitzero,min_le
   save(msd_fit_all,file=file.path(directory,paste("msd_fit_all_",extension,".Rdata")))
   save(track_stats_all,file=file.path(directory,paste("track_stats_all_",extension,".Rdata")))
 }
-
-msd_analyze_data_mosaic <- function(directory,condition_list,framerate,n,fitzero,min_length,pixelsize,fitMSD,offset,max_tracks,track_file_name="tracks.simple.filtered.txt",extension="",dim){
-  segments_all <- list()
-  msd_fit_all <- list()
-  track_stats_all <- list()
-
-  for (i in 1:length(condition_list)){
-    segments <- list()
-    dir <- file.path(directory,condition_list[i])
-    filelist <- list.files(dir,full.names = T,recursive = F,pattern = "^Traj_.*.\\.csv$")
-    total <- length(filelist)
-    # create progress bar
-    for(j in 1:total){
-      Sys.sleep(0.1)
-      tracks_simple <- read.csv(filelist[j],sep = ",",header = T)
-      names(tracks_simple) <- c("id","track","frame","X","Y","Z","m0","m1","m2","m3","m4","NPscore")
-
-      tracks_simple <- tracks_simple[,c(3,4,5,2,6,7,8,9,10,11,12)]
-      tracks_simple$frame <- tracks_simple$frame-1
-     segments[[j]] <- data.frame(SEGMENT_STAT(tracks_simple),"cellID"=basename(filelist[j]))
-    }
-    track_msd <- TRACK_MSD(segments,n = n,framerate=framerate,truncate = FALSE,pxsize = pixelsize,dim=dim)
-    save(track_msd,file=file.path(dir,"track_msd.Rdata"))
-
-    if(fitMSD){
-      tracks <-  TRACK_MSD_fit(track_msd,n = n,fitzero = fitzero,framerate=framerate,pxsize = pixelsize,offset=offset,dim=dim)
-      save(tracks,file=file.path(dir,"msd_fit.Rdata"))
-
-      stats <- TRACK_STAT(x=segments)
-      save(stats,file=file.path(dir,"track_stats.Rdata"))
-
-    }
-    segments_all[[basename(dir)]] <- data.frame(ldply(segments),"condition"=basename(dir))
-    msd_fit_all[[basename(dir)]] <- data.frame(ldply(tracks),"condition"=basename(dir))
-    track_stats_all[[basename(dir)]] <- data.frame(ldply(stats),"condition"=basename(dir))
-
-
-  }
-  #save data to the folder
-  save(segments_all,file=file.path(directory,paste("segments_all_",extension,".Rdata")))
-  save(msd_fit_all,file=file.path(directory,paste("msd_fit_all_",extension,".Rdata")))
-  save(track_stats_all,file=file.path(directory,paste("track_stats_all_",extension,".Rdata")))
-}
-
-
-msd_analyze_data_submask <- function(directory,condition_list,framerate,n,fitzero,min_length,pixelsize,fitMSD,offset,max_tracks,track_file_name="tracks.simple.filtered.txt",extension=""){
-  library(RImageJROI)
-  library(spatstat.utils)
-  library(spatstat)
-  segments_inside_all <- list()
-  segments_outside_all <- list()
-
-  msd_fit_inside_all <- list()
-  msd_fit_outside_all <- list()
-  track_stats_inside_all <- list()
-  track_stats_outside_all <- list()
-
-
-  for (i in 1:length(condition_list)){
-    segments_inside <- list()
-    segments_outside <- list()
-    dir <- file.path(directory,condition_list[i])
-    filelist <- list.dirs(dir,full.names = T,recursive = F)
-    total <- length(filelist)
-    # create progress bar
-    for(j in 1:total){
-      Sys.sleep(0.1)
-      tracks_simple <- read.csv(file.path(filelist[j],track_file_name),sep = "\t",header = F)
-      tracks_simple$inside <- FALSE
-      roi <- read.ijzip(file.path(filelist[j],"mask_a.zip"))
-      roi <- llply(roi, function(x){
-        area <- Area.xypolygon( list(x = x$coords[, 1], y = x$coords[, 2]))
-        if (area<0){
-          x$coords <- x$coords[ nrow(x$coords):1, ]
-        }
-        return(x)
-      })
-      roi <- llply(roi, function(x){
-        ij2spatstat(x)
-      })
-
-
-
-
-      for(i in 1:length(roi)){
-        tracks_simple$inside<-tracks_simple$inside|inside.owin(x = tracks_simple$V2,y = tracks_simple$V3,w=roi[[i]])
-      }
-      tracks_simple <- ddply(tracks_simple,"V4",function(x){
-        if(any(x$inside)){
-          x$inside <- TRUE
-        }
-        return(x)
-      })
-      inside <-tracks_simple[tracks_simple$inside==TRUE,1:8]
-      track_id <- unique(inside$V4)
-      for(k in 1:length(track_id)){
-        inside$V4[inside$V4==track_id[k]] <- (k-1)
-      }
-        outside <- tracks_simple[tracks_simple$inside==FALSE,1:8]
-        track_id <- unique(outside$V4)
-
-        for(k in 1:length(track_id)){
-          outside$V4[outside$V4==track_id[k]] <- (k-1)
-        }
-      write.table(x = cbind(sprintf("%.2f",inside$V1),sprintf("%.2f",inside$V2),sprintf("%.2f",inside$V3),inside$V4,
-                            sprintf("%.2f",inside$V5),sprintf("%.2f",inside$V6),sprintf("%.2f",inside$V7),sprintf("%.2f",inside$V8)),
-                            file = file.path(filelist[j],"tracks.simple.filtered_a.txt"),sep = "\t",col.names = F, row.names = F,quote = F)
-      write.table(x = cbind(sprintf("%.2f",outside$V1),sprintf("%.2f",outside$V2),sprintf("%.2f",outside$V3),outside$V4,
-                            sprintf("%.2f",outside$V5),sprintf("%.2f",outside$V6),sprintf("%.2f",outside$V7),sprintf("%.2f",outside$V8)),
-                  file = file.path(filelist[j],"tracks.simple.filtered_b.txt"),sep = "\t",col.names = F, row.names = F,quote = F)
-    names(tracks_simple) <- c("frame","X","Y","track","displacement","intensity","sigma","fit_error","inside")
-      segments_inside[[j]] <- data.frame(SEGMENT_STAT(tracks_simple[tracks_simple$inside==TRUE,]),"cellID"=basename(dirname(file.path(filelist[j],track_file_name))))
-      segments_outside[[j]] <- data.frame(SEGMENT_STAT(tracks_simple[tracks_simple$inside==FALSE,]),"cellID"=basename(dirname(file.path(filelist[j],track_file_name))))
-
-    }
-    track_msd_inside <- TRACK_MSD(llply(segments_inside,function(x) {
-      x[x$inside,]
-    }),n = n,framerate=framerate,truncate = FALSE)
-    track_msd_outside <- TRACK_MSD(llply(segments_outside,function(x) {
-      x[!x$inside,]
-    }),n = n,framerate=framerate,truncate = FALSE)
-
-
-      tracks_inside <-  TRACK_MSD_fit(track_msd_inside,n = n,fitzero = fitzero,framerate=framerate,offset)
-      tracks_outside <-  TRACK_MSD_fit(track_msd_outside,n = n,fitzero = fitzero,framerate=framerate,offset)
-      save(tracks_inside,file=file.path(dir,"msd_inside_fit.Rdata"))
-      save(tracks_outside,file=file.path(dir,"msd_outside_fit.Rdata"))
-
-      stats_inside <- TRACK_STAT(x=segments_inside)
-      stats_outside <- TRACK_STAT(x=segments_outside)
-
-
-
-    segments_inside_all[[basename(dir)]] <- data.frame(ldply(segments_inside),"condition"=basename(dir))
-    segments_outside_all[[basename(dir)]] <- data.frame(ldply(segments_outside),"condition"=basename(dir))
-
-    msd_fit_inside_all[[basename(dir)]] <- data.frame(ldply(tracks_inside),"condition"=basename(dir))
-    msd_fit_outside_all[[basename(dir)]] <- data.frame(ldply(tracks_outside),"condition"=basename(dir))
-    track_stats_inside_all[[basename(dir)]] <- data.frame(ldply(stats_inside),"condition"=basename(dir))
-    track_stats_outside_all[[basename(dir)]] <- data.frame(ldply(stats_outside),"condition"=basename(dir))
-
-
-
-  }
-  #save data to the folder
-  save(segments_inside_all,file=file.path(directory,paste0("segments_inside_all_",extension,".Rdata")))
-  save(segments_outside_all,file=file.path(directory,paste0("segments_outside_all_",extension,".Rdata")))
-
-  save(msd_fit_inside_all,file=file.path(directory,paste0("msd_fit_inside_all_",extension,".Rdata")))
-  save(msd_fit_outside_all,file=file.path(directory,paste0("msd_fit_outside_all_",extension,".Rdata")))
-
-  save(track_stats_all,file=file.path(directory,paste0("track_stats_all_",extension,".Rdata")))
-  save(track_stats_inside_all,file=file.path(directory,paste0("track_stats_inside_all_",extension,".Rdata")))
-
-}
-
 
 msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NULL,ymax=0.12,merge_var="cellID"){
  library(plyr)
@@ -273,7 +114,7 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
     colMeans(x[,-c(1,2)])
   })
   sds <- ddply(out,.variables = "condition",function(x){
-    apply(x[,-c(1,2)], 2, sd)#/sqrt(length(table(x$cellID))) #if se instead of stdev
+    apply(x[,-c(1,2)], 2, sd)
   })
 
   means <- melt(means)
@@ -292,7 +133,6 @@ msd_histogram <- function(msd_fit_all,directory,name="",threshold=0.05,order=NUL
   data <- data.frame(histdata[,1:2])
   names(data) <- c("x","y")
 
-  #levels(histdata$.id) <- c(levels(histdata$.id)[2],levels(histdata$.id)[1])
 
   if(length(msd_fit_all)>2){
   q1 <- ggplot(histdata, aes(x=x, y=mean,colour=.id,fill=.id)) +

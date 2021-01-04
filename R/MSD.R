@@ -1,8 +1,8 @@
 track_msd <- function(x,n=5,framerate=0.1,pxsize=100,truncate=F,dim=2){
-  if (dim==2){
+  if (dim==2){ #for 2D data
     x$X <- (x$X*pxsize)/1000 #convert pixelsize to um
     x$Y <- (x$Y*pxsize)/1000
-  } else if (dim==3){
+  } else if (dim==3){ #for 3D data
     x$X <- (x$X*pxsize[1])/1000 #convert pixelsize to um
     x$Y <- (x$Y*pxsize[2])/1000
     x$Z <- (x$Z*pxsize[3])/1000
@@ -12,8 +12,8 @@ track_msd <- function(x,n=5,framerate=0.1,pxsize=100,truncate=F,dim=2){
     result <- vector(length = n)
     #put first frame of track at zero
     x$frame  <- x$frame-x$frame[1]+1
-    if(nrow(x)>n+1){
-      if(truncate){ #test effect of truncating tracks to first number of steps, skipped by default
+    if(nrow(x)>n+1){ #test effect of truncating tracks to first number of steps, skipped by default
+      if(truncate){
         x <- x[1:6,]
       }
       #loop over different time intervals
