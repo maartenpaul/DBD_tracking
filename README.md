@@ -7,4 +7,16 @@ Track segmentation and MSD analysis is done using the DLMSS method (Arts, M., Sm
 
 Data is imported from folders with csv files using 'scripts/analysis script v2.R' and track segmentation is done using 'analyze_MLMSS.R' a adapted script that allows to do DLMSS analysis directy from RStudio, using the Reticulate package.
 
+The package can be installed in R Studio (www.r-studio.com)
+
+```R
+install.packages("devtools")  
+library(devtools)  
+
+
+install_github("maartenpaul/DBD_tracking")
+
+library(DBD_tracking)  
+```
+
 For questions please contact Maarten Paul (m.w.paul@erasmusmc.nl)
