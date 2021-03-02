@@ -1,6 +1,6 @@
 # MSDtracking
 
-R and Python code to analyze single-molecule tracking data as described in ...
+R and Python code to analyze BRCA2-HaloTag single-molecule tracking data
 
 For tracking the SOS Plugin [1] (http://smal.ws/wp/software/sosplugin/) is used.
 Track segmentation and MSD analysis is done using the DLMSS method [2]
