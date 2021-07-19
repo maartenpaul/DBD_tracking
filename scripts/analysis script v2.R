@@ -17,7 +17,7 @@ fitMSD <- T
 offset <- 4*(0.01)^2#experimentally determined
 max_tracks <- 500 #maximum number of tracks per frame else exclude tracks from dataset, avoids mislinking of tracks
 
-directory <- "F:/181012 BRCA2-Halo PCNA-iRFP IR tracking/"
+directory <- ""
 condition_list <- list.dirs(directory,full.names = F,recursive = F)
 
 msd_analyze_data(directory,condition_list,framerate,n,fitzero,min_length,pixelsize,fitMSD,offset,max_tracks)
