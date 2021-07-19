@@ -54,9 +54,9 @@ scale_colour_Publication <- function(...){
 }
 
 #select data sets processed with "analysis script v2.R"
-datasets <- c("/media/OIC-station2/Genetics/181005 BRCA2-Halo PCNA-iRFP IR tracking/",
-              "/media/OIC-station2/Genetics/181010 BRCA2-Halo PCNA-iRFP IR tracking/",
-              "/media/OIC-station2/Genetics/181012 BRCA2-Halo PCNA-iRFP IR tracking/")
+datasets <- c("181005 BRCA2-Halo PCNA-iRFP IR tracking/",
+              "181010 BRCA2-Halo PCNA-iRFP IR tracking/",
+              "181012 BRCA2-Halo PCNA-iRFP IR tracking/")
 segments <- list()
 for(x in datasets){ #load files
   load(file.path(x,"segments_all.Rdata"))
@@ -79,7 +79,7 @@ source('python/ML_py.R')
 segments_all <- ddply(segments_all, .variables = c("condition","cellID"), function(x){
     ML_segment_tracks(x)
 })
-save(segments_all,file = "/home/maarten/Documents/DBD paper analysis/segments_all.Rdata")
+save(segments_all,file = "segments_all.Rdata")
 
 ptm <- proc.time()
 #initialize cluster
@@ -139,9 +139,9 @@ segs_nest <- segments_all %>%
   group_modify(~MSD_MSS(.x)) %>%
   inner_join(y=segments_all,by=c("cellID","condition","tracklet"))
 
-save(segs_nest,file = "/home/maarten/Documents/DBD paper analysis/segments_tbl.Rdata")
-write_csv(segs_nest,path = "/home/maarten/Documents/DBD paper analysis/segments_tbl.txt")
-load(file = "/home/maarten/Documents/DBD paper analysis/segments_tbl.Rdata")
+save(segs_nest,file = "segments_tbl.Rdata")
+write_csv(segs_nest,path = "segments_tbl.txt")
+load(file = "segments_tbl.Rdata")
 
 segs_nest <- segs_nest %>%
   filter(condition!="WT G10 cell cycle")
