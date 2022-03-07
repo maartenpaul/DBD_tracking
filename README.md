@@ -16,7 +16,7 @@ library(devtools)
 
 install_github("maartenpaul/DBD_tracking")
 
-library(DBD_tracking)  
+library(MSDtracking)  
 ```
 
 For questions please contact Maarten Paul (m.w.paul@erasmusmc.nl)
